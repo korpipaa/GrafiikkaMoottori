@@ -1,0 +1,440 @@
+/// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+/// "THE BEER-WARE LICENSE" (Revision 42):
+/// <mikko.romppainen@kamk.fi> wrote this file.  As long as you retain this notice you
+/// can do whatever you want with this stuff. If we meet some day, and you think
+/// this stuff is worth it, you can buy me a beer in return. Mikko Romppainen.
+/// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+#include <TestApplication.h>
+
+#include <graphics/GraphicsSystem.h>
+#include <graphics/Window.h>
+#include <math.h>
+#include "OGL/OGL.h"
+#include "OGL/OGLGraphicsSystem.h"
+#include <vector>
+#include <stdint.h>
+#include <fstream>
+#include <iostream>
+#include <stdio.h>
+#include "stb.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
+
+namespace engine
+{
+	//create a shader object, load the shader source, and compile the shader
+
+	GLuint LoadShader(GLenum type, const char* shaderSrc)
+	{
+
+		GLuint shader;
+		GLint compiled;
+
+		//create the shader object
+		shader = glCreateShader(type);
+
+		if (shader == 0)
+			return 0;
+		//load the shader source
+		glShaderSource(shader, 1, &shaderSrc, NULL);
+
+		//compile the shader
+		glCompileShader(shader);
+
+		//check the compile status
+		glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+
+		if (!compiled)
+		{
+			GLint infoLen = 0;
+			glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLen);
+
+			if (infoLen > 1)
+			{
+				char* infoLog = (char*)malloc(sizeof(char) * infoLen);
+
+				glGetShaderInfoLog(shader, infoLen, NULL, infoLog);
+				LOGI("ERROR compiling shader:\n%s\n", infoLog);
+
+				free(infoLog);
+			}
+			glDeleteShader(shader);
+			return 0;
+		}
+		return shader;
+	}
+
+
+	TestApplication::TestApplication(Window* window, GraphicsSystem* graphics)
+		: GraphicsApplication(window, graphics)
+		, m_totalTime(0.0f)
+	{
+		//Tehtävä 3: Tekstuurin lisääminen objektille--------------------------------------------
+		/*char vShaderStr[] =
+		"attribute vec4 vPosition;    \n"
+		"attribute vec2 vTexCoord;    \n"
+		"varying vec2 texCoord;      \n"
+		"void main()                  \n"
+		"{                            \n"
+		"   gl_Position = vPosition;  \n"
+		"   texCoord = vTexCoord;    \n"
+		"}                            \n";
+
+		char fShaderStr[] =
+		"precision mediump float;                     \n"\
+		"varying vec2 texCoord;                      \n"
+		"void main()                                  \n"
+		"{                                            \n"
+		"  gl_FragColor = 0.5* (texCoord.y+texCoord.x) * vec4 ( 1.0, 1.0, 1.0, 1.0 );\n"
+		"}                                            \n";
+
+		m_programObject = graphics->CreateShaderProgram(vShaderStr, fShaderStr);
+		m_shaders.push_back(new OGLShader(vShaderStr, fShaderStr, { "vPosition", "vTexCoord" }));
+
+		char textureVertexShader[] =
+		"attribute vec4 vPosition;    \n"
+		"attribute vec2 vTexCoord;    \n"
+		"varying vec2 texCoord;      \n"
+		"void main()                  \n"
+		"{                            \n"
+		"   gl_Position = vPosition;  \n"
+		"   texCoord = vTexCoord;    \n"
+		"}							 \n";
+
+		char texturedFragmentShader[] =
+		"precision mediump float;                     \n"
+		"uniform sampler2D texture;                   \n"
+		"varying vec2 texCoord;                      \n"
+		"void main()                                  \n"
+		"{                                            \n"
+		"  gl_FragColor = texture2D(texture, texCoord);\n"
+		"}												 \n";
+		*/
+
+		//std::string vs = loadFile("vertexShader.txt");
+
+		//std::string fs = loadFile("fragmentShader.txt");
+		//shader 0 = texture shader
+		//m_shaders.push_back(new OGLShader(textureVertexShader, texturedFragmentShader, { "vPosition", "vTexCoord" }));
+
+		//m_shaders.push_back(new OGLShader(vs, fs, { "vPosition", "vTexCoord" }));*/
+
+		/*	GLubyte pixels[4 * 3] =
+		{
+		255,255,0,//red  255,0,0,
+		0,0,255,//green  0,255,0,
+		0,255,0,//blue	0,0,255,
+		255,0,0//yellow  255,255,0
+		};
+		m_textures.push_back(loadPic());*/
+
+		std::vector<char>loadFile(const std::string & fileName);
+
+		//testi tehtävä 7________________________________________________________________
+
+		/*int Init(ESContext *esContext)
+		{
+		UserData *userData = esContext->userData;
+		GLbyte vShaderStr[] =
+		"attribute vec4 a_position;   \n"
+		"attribute vec2 a_texCoord;   \n"
+		"varying vec2 v_texCoord;     \n"
+		"void main()                  \n"
+		"{                            \n"
+		"   gl_Position = a_position; \n"
+		"   v_texCoord = a_texCoord;  \n"
+		"}                            \n";
+
+		GLbyte fShaderStr[] =
+		"precision mediump float;                            \n"
+		"varying vec2 v_texCoord;                            \n"
+		"uniform sampler2D s_texture;                        \n"
+		"void main()                                         \n"
+		"{                                                   \n"
+		"  gl_FragColor = texture2D( s_texture, v_texCoord );\n"
+		"}                                                   \n";
+
+		// Load the shaders and get a linked program object
+		userData->programObject = esLoadProgram ( vShaderStr, fShaderStr );
+
+		// Get the attribute locations
+		userData->positionLoc = glGetAttribLocation ( userData->programObject, "a_position" );
+		userData->texCoordLoc = glGetAttribLocation ( userData->programObject, "a_texCoord" );
+
+		// Get the sampler location
+		userData->samplerLoc = glGetUniformLocation ( userData->programObject, "s_texture" );
+
+		// Load the texture
+		userData->textureId = CreateSimpleTexture2D ();
+
+		glClearColor ( 0.0f, 0.0f, 0.0f, 0.0f );
+		return TRUE;
+		}
+		*/
+
+
+		//Tehtävä 7: Model - View - Projection - matriisi---------------------
+
+		char vShaderStr[] =
+			"attribute vec4 vPosition;      \n"
+			"attribute vec2 vTexCoord;		\n"
+			"varying vec2 texCoord;			\n"
+			//"uniform mat4 MVP;			  \n"
+			"void main()					\n"
+			"{								\n"
+			"   gl_Position = vPosition;  \n"
+			"   texCoord = vTexCoord;		\n;"
+			"}								\n";
+
+		char fShaderStr[] =
+			"precision mediump float;                     \n"\
+			"uniform sampler2D texture; 				  \n"
+			"varying vec2 texCoord;						  \n"
+			"void main()                                  \n"
+			"{                                            \n"
+			"  gl_FragColor = texture2D(texture, texCoord);\n"
+			"}                                            \n";
+
+		GLuint vertexShader;
+		GLuint fragmentShader;
+		GLint linked;
+
+		//load the vertex/fragment shader
+		vertexShader = LoadShader(GL_VERTEX_SHADER, vShaderStr);
+		fragmentShader = LoadShader(GL_FRAGMENT_SHADER, fShaderStr);
+
+		//create the progmram object
+		m_programObject = glCreateProgram();
+
+		if (m_programObject == 0)
+			return;
+
+		glAttachShader(m_programObject, vertexShader);
+		glAttachShader(m_programObject, fragmentShader);
+
+		//bind vposition to attribute 0
+		glBindAttribLocation(m_programObject, 0, "vPosition");
+
+		//link the progmram
+		glLinkProgram(m_programObject);
+
+		//check the link status
+		glGetProgramiv(m_programObject, GL_LINK_STATUS, &linked);
+
+		if (!linked)
+		{
+			GLint infoLen = 0;
+
+			glGetProgramiv(m_programObject, GL_INFO_LOG_LENGTH, &infoLen);
+
+			if (infoLen > 1)
+			{
+				char* infoLog = (char*)malloc(sizeof(char) * infoLen);
+
+				glGetProgramInfoLog(m_programObject, infoLen, NULL, infoLog);
+				LOGI("ERROR linking program:\n%s\n", infoLog);
+
+				free(infoLog);
+			}
+			glDeleteProgram(m_programObject);
+			return;
+		}
+
+		//store the program object
+		//userData->programObject = programObject;
+
+		glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+	}
+
+	TestApplication::~TestApplication()
+	{
+	}
+
+	Texture2D* TestApplication::loadPic()
+	{
+		//Tehtävä 5: Tekstuurin lataaminen tiedostosta----------------------
+		char* img;
+		int width, height;
+		std::string kuva = "photo.png";
+		int comp;
+		extern char* _binary_font_png_start, _binary_font_png_end;
+		//img = (char*)stbi_load_from_memory((unsigned char*) &width, &height, &comp, 4);
+
+		unsigned char* image = stbi_load(kuva.c_str(), &width, &height, &comp, 0);
+
+		if (image == nullptr)
+			throw(std::string("Failed to load texture"));
+
+		return (new Texture2D(width, height, comp, image));
+	}
+
+	/*Texture2D *TestApplication::loadPic()l
+	{
+	std::string picture;
+
+	int width, height, bpp;
+
+	//unsigned char* ptr = src.data(10, 10, 0);
+
+	}*/
+
+
+	std::string TestApplication::loadFile(const std::string& fileName)
+	{
+		std::string line;
+		std::ifstream myFile(fileName);
+		std::string nimifile;
+		if (myFile)
+		{
+			while (myFile.peek() != EOF)
+			{
+				std::getline(myFile, line);
+				nimifile += line;
+			}
+			myFile.close();
+		}
+		return nimifile;
+	}
+
+
+	bool TestApplication::update(float deltaTime)
+	{
+		//Tehtävä 7: Model-View-Projection-matriisi---------------
+		glm::mat4 myMatrix;
+		glm::vec4 myVector;
+
+		m_totalTime += deltaTime;
+
+		glm::vec4 transformedVector = myMatrix * myVector;
+
+
+		glm::mat4 model = glm::translate(glm::mat4(1.0f), glm::vec3(0.1f, 0.2f, 0.5f));
+		//compute matrixes:
+		//translation
+		m_model = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 100.0f, 0.0f));
+
+		//rotationaround 0z with 45degrees
+		m_model = glm::rotate(m_model, m_totalTime, glm::vec3(0.0f, 0.0f, 1.0f));
+
+		//scale is 1.0
+		m_model = glm::scale(m_model, glm::vec3(100.0f, 100.0f, 100.0f));
+
+		m_model1 = glm::translate(glm::mat4(1.0f), glm::vec3(100.0f, 100.0f, 3.0f));
+
+		//rotationaround 0z with 45degrees
+		//m_model1 = glm::rotate(m_model, m_totalTime, glm::vec3(0.0f, 0.0f, 1.0f));
+
+		//scale is 1.0
+		m_model1 = glm::scale(m_model, glm::vec3(50.0f, 50.0f, 50.0f));
+
+		m_view = glm::mat4(1.0f);
+		m_projection = glm::ortho(0.0f, 800.0f, 600.0f, 0.0f);
+
+
+		return true;
+	}
+
+	void TestApplication::render(Window* window, GraphicsSystem* graphics)
+	{
+
+		(void)window;
+		float val = fabsf(sinf(2.0f * m_totalTime));
+
+		// Clear screen with pulsating yellow---------------------------------------------
+		graphics->clearScreen(val, val, 0.0f, true);
+
+		//Tehtävä 2: Tekstuurikoordinaattien lisääminen suorakaiteelle---------------------
+
+		/* Draw a triangle using the shader pair created in Init()
+		{
+		GLfloat vVertices[] =
+		{ 1.0f,  1.0f, 1.0f,
+		-1.0f, 1.0f, 1.0f,
+		-1.0f, -1.0f, 1.0f,
+		1.0f,  1.0f, 1.0f,
+		1.0f, -1.0f, 1.0f,
+		-1.0f, -1.0f, 1.0f };
+
+		// Set the viewport
+		glViewport(0, 0, 320, 240);
+
+		// Clear the color buffer
+		glClear(GL_COLOR_BUFFER_BIT);
+
+		// Use the program object
+		glUseProgram(programObject);
+
+		// Load the vertex data
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
+		glEnableVertexAttribArray(0);
+
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		Swap buffers*/
+
+		//Tehtävä 3: Tekstuurin lisääminen objektille----------------------------
+
+		/* // Draw 2 triangles (quad) 2 middle of the screen
+		float size = 1.0f;
+		float dx = -0.5f;
+		float dy = -0.5f;
+		float depth = 0.0f;
+		GLfloat quad[] = {
+		dx + 0.0f, dy + size,depth,      //Vertex0
+		dx + 0.0f, dy + 0.0f,depth,      //Vertex1
+		dx + size, dy + 0.0f,depth,      //Vertex2
+		dx + size, dy + size,depth,      //Vertex3
+		dx + size, dy + 0.0f,depth,      //Vertex4
+		dx + 0.0f, dy + size,depth,      //Vertex5
+		};
+		//Texture coordinates, whose origin (0,0) is top-left-corner
+		GLfloat texCoords[] = {
+		0,0,							//Vertex0
+		0,1,							//Vertex1
+		1,1,							//Vertex2
+		1,0,							//Vertex3
+		1,1,							//Vertex4
+		0,0								//Vertex5
+		};
+		//draw texture quad*/
+		//graphics->drawTriangles(m_shaders[0], m_textures[0], quad, texCoords, 6);
+		//graphics->swapBuffers();
+
+		//Tehtävä 7: Model - View - Projection - matriisi---------------
+
+		//userdata *userData = esContect->userData;
+		GLfloat vVertices[] = {
+			0.0f,0.5f,0.0f,
+			-0.5,-0.5f,0.0f,
+			0.5f,-0.5f,0.0f
+		};
+		GLuint mvpId = glGetUniformLocation(m_programObject, "MVP");
+		//us the program object
+		glUseProgram(m_programObject);
+
+		// Set MVP // compute the MVP-matrix. Remember to invert view
+		glm::mat4 mvp = m_projection * glm::inverse(m_view) * m_model;
+		GLuint mvpLoc = glGetUniformLocation(m_programObject, "MVP");
+		glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+
+		//mvp = m_projection * glm::inverse(m_view) * m_model1;
+		//mvpLoc = glGetUniformLocation(m_programObject, "MVP");
+		//glUniformMatrix4fv(mvpLoc, 1, GL_FALSE, glm::value_ptr(mvp));
+
+
+		// Load the vertex data
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, vVertices);
+		glEnableVertexAttribArray(0);
+
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+
+
+		// Swap buffers
+		graphics->swapBuffers();
+
+		void reshape(GLsizei width, GLsizei height);
+	}
+
+
+}
